@@ -77,7 +77,7 @@ namespace Wallet.Controllers {
         [HttpGet]
         [Authorize]
         [Route(nameof(List))]
-        public async Task<List<SubCategory>> List(string categoryIds) {
+        public async Task<List<SubCategory>> List(string categoryId) {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             var user = await _userManager.FindByIdAsync(userId);
@@ -86,14 +86,18 @@ namespace Wallet.Controllers {
             if (user.Roles.Contains(adminRoleGuid.Id)) {
                 return await _subCategoryService.GetListToAdminAsync();
             }
-            return await _subCategoryService.GetListAsync(userId, categoryIds);
+            return await _subCategoryService.GetListAsync(userId, categoryId);
         }
 
 
         [HttpPost]
         [Authorize]
         [Route(nameof(Create))]
-        public async Task<string> Create(SubCategoryRequest request) {
+        public async Task<string> Create(CreateSubCategoryRequest request) {
+            if (request.CategoryId == null) {
+                return "category not exists";
+            }
+
             var category = await _categoryService.GetAsyncById(request.CategoryId);
             if (category == null) {
                 return "category not exists";
@@ -148,13 +152,13 @@ namespace Wallet.Controllers {
         [HttpPost]
         [Authorize]
         [Route(nameof(Update))]
-        public async Task<SubCategory> Update(SubCategoryRequest request) {
+        public async Task<SubCategory> Update(UpdateSubCategoryRequest request) {
             var subCategoryFromDb = await _subCategoryService.GetAsyncById(request.SubCategoryId);
 
             if (subCategoryFromDb == null) {
                 throw new ArgumentException($"SubCategory with id: {request.SubCategoryId} not exists");
             }
-            subCategoryFromDb.Name = request.SubCategoryName ?? subCategoryFromDb.Name;           
+            subCategoryFromDb.Name = request.NewSubCategoryName ?? subCategoryFromDb.Name;           
 
             await _subCategoryService.UpdateAsync(
                 request.SubCategoryId,
@@ -171,7 +175,7 @@ namespace Wallet.Controllers {
         }
 
 
-        [HttpPost]
+        [HttpGet]
         [Route(nameof(Delete))]
         public async Task<bool> Delete(string subCategoryId) {
             var subCategoryFromDb = await _subCategoryService.GetAsyncById(subCategoryId);
